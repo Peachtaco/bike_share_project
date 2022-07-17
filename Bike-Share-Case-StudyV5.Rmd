@@ -1,0 +1,84 @@
+---
+title: "Bike Share Case Study"
+author: "Andy Guo"
+date: "`r Sys.Date()`"
+output: "html_notebook"
+---
+
+For my Google Data Analytics capstone project, I completed a case study for a fictional bike-share company in which I analyzed 12 months of data to understand the difference between casual riders and annual members. From these insights, the marketing team can develop a strategy to convert casual riders into annual members. To accomplish my task, I applied the data analysis process including ask, prepare, process, analyze, share, and act.
+
+#### Ask
+
+Cyclistic is a bike-share company in Chicago with a fleet of 5,824 geotracked bicycles and a network of 692 stations. They offer 3 pricing plans: single-ride passes, full-day passes, and annual memberships. Customers who purchase single-ride or full-day passes are referred to as casual riders and customers who purchase annual memberships are referred to as Cyclistic members. The company determined that annual members are more profitable than casual riders and is aiming to create a marketing campaign to maximize the number of annual members by converting casual riders.
+
+**Key stakeholder**: Lily Moreno, the director of marketing responsible for developing campaigns to promote bike-share program.
+
+**Business task:** How do annual members and casual riders use Cyclistic bikes differently?
+
+#### Data
+
+Since Cyclistic is a fictional company, we want to use proxy data from a similar bike-share company which can be downloaded from : <https://divvy-tripdata.s3.amazonaws.com/index.html>
+
+After downloading 12 ZIP files, each containing a CSV file with data for each month between June 2021 and May 2022, install and load required packages, then import and bind all 12 data sets into a single data frame. `read_csv` will automatically extract ZIP files.
+
+```{r load_packages}
+#Install and load required packages.
+library(tidyverse) 
+library(lubridate) 
+library(hms)
+library(janitor)
+```
+
+```{r import_and_bind}
+#Import and bind 12 datasets into single data frame. 
+bikedata1 <- list.files(pattern = "*.csv") %>% 
+  lapply(read_csv) %>% 
+  bind_rows()
+```
+
+Data Information
+
+-   There are 13 columns and 5860776 rows.
+
+-   Data types include 2 datetime, 4 double, and 7 character.
+
+-   There are missing values in start_station_name, start_station_id, end_station_name, end_station_id
+
+```{r preview_data}
+#Preview data for immediate insights
+str(bikedata1)
+head(bikedata1)
+glimpse(bikedata1)
+colnames(bikedata1)
+```
+
+```{r verify_data}
+bikedata1 %>% count(member_casual)
+bikedata1 %>% get_dupes(ride_id)
+```
+
+We want to separate the date and add columns for the month, day, year, and day of the week. This will allow us to aggregate data and perform calculations easier. We also want to find the length of each ride using the difftime() function, then convert it to a format that is easy to read (HH:MM:SS)
+
+```{r add_date_columns}
+bikedata1$date <- as_date(bikedata1$started_at)
+bikedata1$month <- format(as_date(bikedata1$date), "%m")
+bikedata1$day <- format(as_date(bikedata1$date), "%d")
+bikedata1$year <- format(as_date(bikedata1$date), "%Y")
+bikedata1$day_of_week <- format(as_date(bikedata1$started_at), "%A")
+```
+
+```{r add_ride_length}
+bikedata1$ride_length <- difftime(bikedata1$ended_at, bikedata1$started_at) %>% as_hms()
+```
+
+```{r remove_bad_data}
+cmini <- mini %>% select(-end_station_name, -end_station_id, -end_lat, -end_lng, -start_lat, -start_lng, -start_station_name, -start_station_id)
+```
+
+```{r}
+summary(as.numeric(cmini$ride_length)) / 60
+```
+
+```{r}
+aggregate(list(ride_length = cmini$ride_length), list(member_type = cmini$member_casual), mean)
+```
