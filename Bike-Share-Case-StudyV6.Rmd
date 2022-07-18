@@ -31,7 +31,7 @@ library(janitor)
 
 ```{r import_and_bind}
 #Import and bind 12 datasets into single data frame. 
-bikedata1 <- list.files(pattern = "*.csv") %>% 
+bikedata1 <- list.files("data", full.names = TRUE, pattern = "*.csv") %>% 
   lapply(read_csv) %>% 
   bind_rows()
 ```
@@ -77,9 +77,9 @@ bikedata1$day_of_week <- format(as_date(bikedata1$started_at), "%A")
 bikedata1$ride_length <- difftime(bikedata1$ended_at, bikedata1$started_at) %>% as_hms()
 ```
 
-We want to remove columns start_lat, start_lng, end_lat, and end_lng as the data was dropped starting in 2020. We also need to decide how to handle missing values which were primarily in start_station_name, start_station_id, end_station_name, and end_station_id. We could try to find the missing stations using the latitude/longitude but the numbers are not accurate to definitively pinpoint the correct station. That leaves us with either removing the variable (column) or observation (row). I decided to remove the rows with missing values to minimize inaccurate data because the missing values may have influenced the start/end times. For example, a bike could have been docked incorrectly and the time continued to run.
+We want to remove columns `start_lat`, `start_lng`, `end_lat`, and `end_lng` as the data was dropped starting in 2020. We also need to decide how to handle missing values which were primarily in `start_station_name`, `start_station_id`, `end_station_name`, and `end_station_id`. We could try to find the missing stations using the latitude/longitude but the numbers are not accurate to definitively pinpoint the correct station. That leaves us with either removing the variable (column) or observation (row). I decided to remove the rows with missing values to minimize inaccurate data because the missing values may have influenced the start/end times. For example, a bike could have been docked incorrectly and the time continued to run.
 
-```{r remove_dirty_data}
+```{r remove_irrelevant_data}
 #Remove lat/lng columns
 bikedata1 <- bikedata1 %>% select(-start_lat, -start_lng, -end_lat, -end_lng)
 
@@ -88,6 +88,8 @@ bikedata1 <- na.omit(bikedata1)
 ```
 
 We want to verify the data and look for any inconsistent or inaccurate data. We confirmed that there are no duplicates, each ride is either member or casual, and the data is within the correct date range. However, there were 3 ride types (electric_bike, classic_bike, and docked_bike) which was not expected. After reviewing the types of bikes available on the [Divvy Bike website](https://divvybikes.com/how-it-works/meet-the-bikes), there there is no mention of a docked bike. I decided to remove rows with docked bikes to minimize the risk of inaccurate date.
+
+We also found rows with ride_length less than or equal to 0 which is not accurate and therefore removed.
 
 ```{r verify_data}
 #Check for duplicates
@@ -101,22 +103,47 @@ bikedata1 %>% count(member_casual)
 
 #Check for data outside date range
 bikedata1 %>% filter(started_at <= as_date("2021-05-31") | started_at >= as_date("2022-06-01"))
+
+#Check for ride length less than or equal to 0
+bikedata1 %>% select(ride_length) %>% filter(ride_length <= 0)
 ```
 
-```{r remove_docked_bike}
-bikedata1 <- bikedata1 %>% filter(!rideable_type == "docked_bike")
+```{r remove_dirty_data}
+#Remove rows with docked bike
+bikedata1 <- bikedata1 %>% filter(!rideable_type == "docked_bike" | ride_length <= 0)
+
+#Remove rows with less than or equal to 0 ride lengths
+bikedata1 <- bikedata1 %>% filter(!ride_length <= 0)
 ```
 
 Analyze Data
 
 ```{r summary_ride_length}
-summary(as.numeric(bikedata1$ride_length)) / 60
+summary(as.numeric(bikedata1$ride_length))
 ```
 
 ```{r}
-aggregate(list(ride_length = bikedata1$ride_length), list(member_type = bikedata1$member_casual), mean)
+aggregate(list(ride_length_mean = bikedata1$ride_length), list(member_type = bikedata1$member_casual), mean)
 
-as.numeric(mean(bikedata1$ride_length), units = "mins")
+aggregate(list(ride_length_median = bikedata1$ride_length), list(member_type = bikedata1$member_casual), median)
+
+aggregate(list(ride_length_max = bikedata1$ride_length), list(member_type = bikedata1$member_casual), max)
+
+aggregate(list(ride_length_min = bikedata1$ride_length), list(member_type = bikedata1$member_casual), min)
+```
+
+```{r}
+aggregate(list(ride_length_mean = bikedata1$ride_length), list(member_type = bikedata1$member_casual, day_of_week = bikedata1$day_of_week), mean)
+
+bikedata1$day_of_week <- ordered(bikedata1$day_of_week, levels = c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'))
+```
+
+```{r}
+bikedata1 %>% mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n(), average_duration = mean(ride_length)) %>% 
+  arrange(member_casual, weekday) %>% 
+  ggplot(aes(x = weekday, y = average_duration, fill = member_casual)) + geom_col(position = "dodge")
 ```
 
 Share Data
