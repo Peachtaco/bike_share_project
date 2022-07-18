@@ -118,3 +118,5 @@ aggregate(list(ride_length = bikedata1$ride_length), list(member_type = bikedata
 
 as.numeric(mean(bikedata1$ride_length), units = "mins")
 ```
+
+Share Data
