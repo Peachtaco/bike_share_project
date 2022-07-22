@@ -68,13 +68,13 @@ bikedata1$day <- format(as_date(bikedata1$date), "%d")
 #Add column for year
 bikedata1$year <- format(as_date(bikedata1$date), "%Y")
 
-#Add Cclumn for day of the week
+#Add Column for day of the week
 bikedata1$day_of_week <- format(as_date(bikedata1$started_at), "%A")
 ```
 
 ```{r add_ride_length}
 #Add column for ride length
-bikedata1$ride_length <- difftime(bikedata1$ended_at, bikedata1$started_at) %>% as_hms()
+bikedata1$ride_length <- difftime(bikedata1$ended_at, bikedata1$started_at) %>% as.numeric()
 ```
 
 We want to remove columns `start_lat`, `start_lng`, `end_lat`, and `end_lng` as the data was dropped starting in 2020. We also need to decide how to handle missing values which were primarily in `start_station_name`, `start_station_id`, `end_station_name`, and `end_station_id`. We could try to find the missing stations using the latitude/longitude but the numbers are not accurate to definitively pinpoint the correct station. That leaves us with either removing the variable (column) or observation (row). I decided to remove the rows with missing values to minimize inaccurate data because the missing values may have influenced the start/end times. For example, a bike could have been docked incorrectly and the time continued to run.
@@ -110,19 +110,19 @@ bikedata1 %>% select(ride_length) %>% filter(ride_length <= 0)
 
 ```{r remove_dirty_data}
 #Remove rows with docked bike
-bikedata1 <- bikedata1 %>% filter(!rideable_type == "docked_bike" | ride_length <= 0)
+bikedata1 <- bikedata1 %>% filter(!rideable_type == "docked_bike")
 
 #Remove rows with less than or equal to 0 ride lengths
 bikedata1 <- bikedata1 %>% filter(!ride_length <= 0)
 ```
 
-Analyze Data
+#### Analyze Data
 
 ```{r summary_ride_length}
 summary(as.numeric(bikedata1$ride_length))
 ```
 
-```{r}
+```{r aggregate_data}
 aggregate(list(ride_length_mean = bikedata1$ride_length), list(member_type = bikedata1$member_casual), mean)
 
 aggregate(list(ride_length_median = bikedata1$ride_length), list(member_type = bikedata1$member_casual), median)
@@ -132,18 +132,39 @@ aggregate(list(ride_length_max = bikedata1$ride_length), list(member_type = bike
 aggregate(list(ride_length_min = bikedata1$ride_length), list(member_type = bikedata1$member_casual), min)
 ```
 
-```{r}
+```{r aggregate_order_data}
+bikedata1$day_of_week <- ordered(bikedata1$day_of_week, levels = c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'))
+
 aggregate(list(ride_length_mean = bikedata1$ride_length), list(member_type = bikedata1$member_casual, day_of_week = bikedata1$day_of_week), mean)
 
-bikedata1$day_of_week <- ordered(bikedata1$day_of_week, levels = c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'))
 ```
 
-```{r}
-bikedata1 %>% mutate(weekday = wday(started_at, label = TRUE)) %>% 
-  group_by(member_casual, weekday) %>% 
-  summarise(number_of_rides = n(), average_duration = mean(ride_length)) %>% 
-  arrange(member_casual, weekday) %>% 
-  ggplot(aes(x = weekday, y = average_duration, fill = member_casual)) + geom_col(position = "dodge")
+```{r plot_day_of_week}
+#Plot average ride duration vs. day of week for members and casual riders.
+bikedata1 %>% 
+  group_by(day_of_week, member_casual) %>% 
+  arrange(day_of_week) %>% 
+  summarise(rides = n(), average_duration = mean(ride_length)) %>% 
+  ggplot(aes(x = day_of_week, y = average_duration, fill = member_casual)) + geom_col(position = "dodge") + scale_fill_carto_d(palette = "Vivid") + labs(x = "Day of Week", y = "Average Ride Duration (seconds)", title = "Average Ride Duration vs. Day of Week for Members and Casual Riders") + theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())
+
+#Plot number of rides vs. day of week for members and casual riders.
+bikedata1 %>% 
+  group_by(day_of_week, member_casual) %>% 
+  arrange(day_of_week) %>% 
+  summarise(rides = n(), average_duration = mean(ride_length)) %>% 
+  ggplot(aes(x = day_of_week, y = rides, fill = member_casual)) + geom_col(position = "dodge") + scale_fill_carto_d(palette = "Vivid") + labs(x = "Day of Week", y = "Number of Rides", title = "Number of Rides vs. Day of Week for Members and Casual Riders") + theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())
+```
+
+```{r plot_month}
+#Plot number of rides vs. month for members and casual riders
+bikedata1 %>% 
+  mutate(month = format(as_date(started_at), "%b") %>% factor(levels = month.abb)) %>% 
+  group_by(month, member_casual) %>% 
+  arrange(month) %>% 
+  summarise(rides = n(), average_duration = mean(ride_length)) %>% 
+  ggplot(aes(x = month, y = rides, fill = member_casual)) + geom_col(position = "dodge") + scale_fill_carto_d(palette = "Vivid") + labs(x = "Month", y = "Number of Rides", title = "Month vs. Number of Rides for Members and Casual Riders") + theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())
 ```
 
 Share Data
+
+Act
