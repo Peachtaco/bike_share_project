@@ -25,8 +25,11 @@ After downloading 12 ZIP files, each containing a CSV file with data for each mo
 #Install and load required packages.
 library(tidyverse) 
 library(lubridate) 
-library(hms)
 library(janitor)
+library(rcartocolor)
+
+# Suppress summarise additional informative output.
+options(dplyr.summarise.inform = FALSE)
 ```
 
 ```{r import_and_bind}
@@ -133,8 +136,10 @@ aggregate(list(ride_length_min = bikedata1$ride_length), list(member_type = bike
 ```
 
 ```{r aggregate_order_data}
+#Order week with Sunday as first day of the week 
 bikedata1$day_of_week <- ordered(bikedata1$day_of_week, levels = c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'))
 
+#Aggregate data to average ride duration vs. member type/day of week
 aggregate(list(ride_length_mean = bikedata1$ride_length), list(member_type = bikedata1$member_casual, day_of_week = bikedata1$day_of_week), mean)
 
 ```
@@ -145,7 +150,7 @@ bikedata1 %>%
   group_by(day_of_week, member_casual) %>% 
   arrange(day_of_week) %>% 
   summarise(rides = n(), average_duration = mean(ride_length)) %>% 
-  ggplot(aes(x = day_of_week, y = average_duration, fill = member_casual)) + geom_col(position = "dodge") + scale_fill_carto_d(palette = "Vivid") + labs(x = "Day of Week", y = "Average Ride Duration (seconds)", title = "Average Ride Duration vs. Day of Week for Members and Casual Riders") + theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())
+  ggplot(aes(x = day_of_week, y = average_duration, fill = member_casual)) + geom_col(position = "dodge") + scale_fill_carto_d(palette = "Vivid") + labs(x = "Day of Week", y = "Average Ride Duration (Seconds)", title = "Average Ride Duration vs. Day of Week for Members and Casual Riders") + theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())
 
 #Plot number of rides vs. day of week for members and casual riders.
 bikedata1 %>% 
@@ -156,13 +161,21 @@ bikedata1 %>%
 ```
 
 ```{r plot_month}
+#Plot average ride duration vs. month for members and casual riders
+bikedata1 %>% 
+  mutate(month = format(as_date(started_at), "%b") %>% factor(levels = month.abb)) %>% 
+  group_by(member_casual, month) %>% 
+  arrange(month) %>% 
+  summarise(rides = n(), average_duration = mean(ride_length)) %>% 
+  ggplot(aes(x = month, y = average_duration, fill = member_casual)) + geom_col(position = "dodge") + scale_fill_carto_d(palette = "Vivid") + labs(x = "Month", y = "Average Ride Duration (Seconds)", title = "Average Ride Duration vs. Month for Members and Casual Riders") + theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())
+
 #Plot number of rides vs. month for members and casual riders
 bikedata1 %>% 
   mutate(month = format(as_date(started_at), "%b") %>% factor(levels = month.abb)) %>% 
-  group_by(month, member_casual) %>% 
+  group_by(member_casual, month) %>% 
   arrange(month) %>% 
   summarise(rides = n(), average_duration = mean(ride_length)) %>% 
-  ggplot(aes(x = month, y = rides, fill = member_casual)) + geom_col(position = "dodge") + scale_fill_carto_d(palette = "Vivid") + labs(x = "Month", y = "Number of Rides", title = "Month vs. Number of Rides for Members and Casual Riders") + theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())
+  ggplot(aes(x = month, y = rides, fill = member_casual)) + geom_col(position = "dodge") + scale_fill_carto_d(palette = "Vivid") + labs(x = "Month", y = "Number of Rides", title = "Number of Rides vs. Month for Members and Casual Riders") + theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())
 ```
 
 Share Data
