@@ -193,4 +193,11 @@ bikedata1 %>%
 
 ## {-}
 
-# Act
+# Act on Insights
+
+Based on the data analyzed, I conclude that casual riders are tourist or people who use the bikes mainly for sightseeing and annual members are commuters or people who use the bikes primarily to travel between home and work. 
+
+My recommendations to increase the number of annual members are as follows:
+-   Partner with companies in the area with a large number of employees and offer a discount for annual membership. 
+-   The number of rides for both casual riders and annual members is significantly higher between the months of March and September; the optimal time to offer a discount on annual membership. 
+-   Offer free trial for annual membership on the weekend. There is a significant number of casual riders on the weekend and it should be the target of any promotion geared towards obtaining annual members. 
