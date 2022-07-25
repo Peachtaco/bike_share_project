@@ -1,7 +1,7 @@
 ---
 title: "Bike Share Case Study"
 author: "Andy Guo"
-date: "`r Sys.Date()`"
+date: 7/25/2022
 output:
   html_document:
     toc: true
@@ -59,9 +59,9 @@ glimpse(bikedata1)
 colnames(bikedata1)
 ```
 
-# Process and Clean Data for Analysis
+# Process and Clean Data
 
-We want to separate the date and add individual columns for the month, day, year, and day of the week. This will allow us to aggregate data and perform calculations easier. We also want to find the length of each ride using the `difftime()` function, then convert the output to a numeric data type to perform calculations easier. 
+We want to separate the date and add individual columns for the month, day, year, and day of the week. This will allow us to aggregate data and perform calculations easier. We also want to find the length of each ride using the `difftime()` function, then convert the output to a numeric data type to perform calculations easier.
 
 ```{r add_date_columns, cache=TRUE, dependson='raw_data'}
 bikedata1$date <- as_date(bikedata1$started_at)
@@ -146,6 +146,7 @@ aggregate(list(ride_length_mean = bikedata1$ride_length), list(member_type = bik
 # Share Visualizations {.tabset .tabset-pills}
 
 ## Ride Number vs. Day of Week
+
 ```{r ride_vs_week}
 #Plot number of rides vs. day of week for members and casual riders.
 bikedata1 %>% 
@@ -157,6 +158,7 @@ bikedata1 %>%
 ```
 
 ## Ride Number Vs. Month
+
 ```{r}
 #Plot number of rides vs. month for members and casual riders
 bikedata1 %>% 
@@ -168,6 +170,7 @@ bikedata1 %>%
 ```
 
 ## Average Duration vs. Day of Week
+
 ```{r}
 #Plot average ride duration vs. day of week for members and casual riders.
 bikedata1 %>% 
@@ -178,6 +181,7 @@ bikedata1 %>%
 ```
 
 ## Average Duration Vs. Month
+
 ```{r plot_month}
 #Plot average ride duration vs. month for members and casual riders
 bikedata1 %>% 
@@ -188,13 +192,16 @@ bikedata1 %>%
   ggplot(aes(x = month, y = average_duration, fill = member_casual)) + geom_col(position = "dodge") + scale_fill_carto_d(palette = "Vivid") + labs(x = "Month", y = "Average Ride Duration (Seconds)", title = "Average Ride Duration vs. Month for Members and Casual Riders") + theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())
 ```
 
-## {-}
+##  {.unnumbered}
 
 # Act on Insights
 
-Based on the data analyzed, I conclude that casual riders are tourist or people who use the bikes mainly for sightseeing and annual members are commuters or people who use the bikes primarily to travel between home and work. 
+Based on the data analyzed, I conclude that casual riders are tourist or people who use the bikes mainly for sightseeing and annual members are commuters or people who use the bikes primarily to travel between home and work.
 
 My recommendations to increase the number of annual members are as follows:
--   Partner with companies in the area with a large number of employees and offer a discount for annual membership. 
--   The number of rides for both casual riders and annual members is significantly higher between the months of March and September; the optimal time to offer a discount on annual membership. 
--   Offer free trial for annual membership on the weekend. There is a significant number of casual riders on the weekend and it should be the target of any promotion geared towards obtaining annual members. 
+
+-   Partner with companies in the area with a large number of employees and offer a discount for annual membership.
+
+-   The number of rides for both casual riders and annual members is significantly higher between the months of March and September; the optimal time to offer a discount on annual membership.
+
+-   Offer free trial for annual membership on the weekend. There is a significant number of casual riders on the weekend and it should be the target of any promotion geared towards obtaining annual members.
